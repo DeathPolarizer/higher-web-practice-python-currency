@@ -1,0 +1,53 @@
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.10.0.0/16
+          gateway: 172.10.0.1
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  parser:
+    build:
+      context: .
+      dockerfile: Dockerfile.parser
+    env_file: .env
+    networks:
+      - app-network
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started

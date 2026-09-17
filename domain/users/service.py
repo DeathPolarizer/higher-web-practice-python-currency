@@ -1,40 +1,61 @@
-from domain.users.dto import CreateUserDTO, UserWithPasswordDTO
+from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.exceptions import UserAlreadyExistsError, UserNotFoundError
+from domain.users.dto import CreateUserDTO, UpdateUserDTO
 from domain.users.models import User
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
-    async def get_user_by_email(self, email: str) -> User:
-        """Получить пользователя по адресу электронной почты.
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-        :param email: Адрес электронной почты пользователя
-        :return: Объект модели пользователя
-        :raises UserNotFoundError: Если пользователь с указанным email не существует
-        """
-        raise NotImplementedError
+    async def get_user_by_email(self, email: str) -> User:
+        result = await self.db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user is None:
+            raise UserNotFoundError(f"User with email {email} not found")
+        return user
 
     async def get_user_by_id(self, id: int) -> User:
-        """Получить пользователя по ID.
+        result = await self.db.execute(select(User).where(User.id == id))
+        user = result.scalar_one_or_none()
+        if user is None:
+            raise UserNotFoundError(f"User with id {id} not found")
+        return user
 
-        :param id: Идентификатор пользователя
-        :return: Объект модели пользователя
-        :raises UserNotFoundError: Если пользователь с указанным ID не существует
-        """
-        raise NotImplementedError
+    async def create_user(self, user_dto: CreateUserDTO) -> User:
+        result = await self.db.execute(
+            select(User).where(User.email == user_dto.email)
+        )
+        if result.scalar_one_or_none() is not None:
+            raise UserAlreadyExistsError(
+                f"User with email {user_dto.email} already exists"
+            )
 
-    async def create_user(self, user: CreateUserDTO) -> User:
-        """Создать нового пользователя.
+        user = User(
+            email=user_dto.email,
+            username=user_dto.username,
+            hashed_password=pwd_context.hash(user_dto.password),
+        )
+        self.db.add(user)
+        await self.db.commit()
+        return user
 
-        :param user: Объект передачи данных для создания пользователя
-        :return: Созданный объект модели пользователя
-        :raises UserAlreadyExistsError: Если пользователь с указанным email уже существует
-        """
-        raise NotImplementedError
+    async def update_user(
+        self, user_id: int, update_dto: UpdateUserDTO
+    ) -> User:
+        user = await self.get_user_by_id(user_id)
 
-    async def update_user(self, user: UserWithPasswordDTO) -> User:
-        """Обновить существующего пользователя.
+        if update_dto.email is not None:
+            user.email = update_dto.email
+        if update_dto.username is not None:
+            user.username = update_dto.username
+        if update_dto.password is not None:
+            user.hashed_password = pwd_context.hash(update_dto.password)
 
-        :param user: Объект передачи данных пользователя с паролем
-        :return: Обновленный объект модели пользователя
-        :raises UserNotFoundError: Если пользователь с указанным email не существует
-        """
-        raise NotImplementedError
+        await self.db.commit()
+        return user

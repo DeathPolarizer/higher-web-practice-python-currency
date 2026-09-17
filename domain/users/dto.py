@@ -1,16 +1,28 @@
+from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+
 
 class CreateUserDTO(BaseModel):
-    # TODO: опишите модель тела запроса для получения запроса на создание пользователя
-    pass
+    email: EmailStr
+    username: str
+    password: str
 
 
 class UserDTO(BaseModel):
-    # TODO: опишите модель тела ответа с данными пользователя без пароля
-    pass
+    id: int
+    email: EmailStr
+    username: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class UserWithPasswordDTO(UserDTO):
-    # TODO: опишите модель тела ответа с данными пользователя с паролем
-    pass
+    hashed_password: str
+
+
+class UpdateUserDTO(BaseModel):
+    email: EmailStr | None = None
+    username: str | None = None
+    password: str | None = None

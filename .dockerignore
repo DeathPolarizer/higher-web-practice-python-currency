@@ -1,0 +1,33 @@
+.dockerignore
+Dockerfile*
+docker-compose*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+*.md
+CODEOWNERS
+
+# Tests/coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Linters
+.ruff_cache/
+
+# Virtual env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Env
+.env
+.env.test*
