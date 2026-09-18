@@ -1,13 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
-from core.config import settings
+from core.config import PASSWORD_CONTEXT, settings
 from core.exceptions import CredentialsError, UserNotFoundError
 from domain.auth.dto import Token, TokenPayload
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
@@ -28,7 +25,7 @@ class AuthService:
         except UserNotFoundError:
             raise CredentialsError("Invalid credentials")
 
-        if not pwd_context.verify(password, user.hashed_password):
+        if not PASSWORD_CONTEXT.verify(password, user.hashed_password):
             raise CredentialsError("Invalid credentials")
 
         access_token = self._create_token(

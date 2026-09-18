@@ -1,12 +1,10 @@
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import PASSWORD_CONTEXT
 from core.exceptions import UserAlreadyExistsError, UserNotFoundError
 from domain.users.dto import CreateUserDTO, UpdateUserDTO
 from domain.users.models import User
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
@@ -39,7 +37,7 @@ class UserService:
         user = User(
             email=user_dto.email,
             username=user_dto.username,
-            hashed_password=pwd_context.hash(user_dto.password),
+            hashed_password=PASSWORD_CONTEXT.hash(user_dto.password),
         )
         self.db.add(user)
         await self.db.commit()
@@ -55,7 +53,7 @@ class UserService:
         if update_dto.username is not None:
             user.username = update_dto.username
         if update_dto.password is not None:
-            user.hashed_password = pwd_context.hash(update_dto.password)
+            user.hashed_password = PASSWORD_CONTEXT.hash(update_dto.password)
 
         await self.db.commit()
         return user

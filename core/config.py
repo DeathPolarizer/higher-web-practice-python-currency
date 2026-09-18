@@ -1,4 +1,7 @@
+from passlib.context import CryptContext
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PASSWORD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class Settings(BaseSettings):
